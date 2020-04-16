@@ -1,6 +1,7 @@
 
 # Container and Kubernetes Best Practices 
 
+[Kubernetes Webinar Presentation April 16, 2020](kubernetes-Is-Hard-April-16th-Webinar.pdf)
 
 Table of Contents
 
