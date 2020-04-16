@@ -6,7 +6,7 @@ Table of Contents
 
 [Container Best Practices](#container-best-practices)
 
-[Container Security and Images](#redhats-10-layers-of-container-security-4)
+[Container Security and Images](#container-security-and-images)
 
 [Cluster Setup](#cluster-setup)
 
@@ -22,18 +22,16 @@ Table of Contents
 
 [Troubleshooting Cluster](#cluster-troubleshooting)
 
-[Troubleshooting Application]()
+[Troubleshooting Application](#troubleshooting-application)
 
 ## Container Best Practices
 
 Single process per container – This keeps image footprint to a minimum and is aligned with the adoption of microservices.
 
-Image Tagging – Implement semantic versioning for application versions and git release or git hashes and then use Docker
- tags to tag the images with the git commit sha or tags for releases, as well as stable and previous. This allows for 
- fast rollback and identification of the application code running in the container. Avoid using the :latest tag when 
+Image Tagging – Implement semantic versioning for application versions and git release or git hashes and then use Docker tags to tag the images with the git commit SHA or tags for releases, as well as stable and previous. Using semver allows for fast rollback and identification of the application code running in the Container. Avoid using the latest tag when 
  deploying containers in production as it is harder to troubleshoot and debug issues
- Avoid running applications under root. Leverage RO where feasible. Ensure `USER` feature is used during docker image 
- build to downgrade the privileges.
+ Avoid running applications under root. Leverage RO where feasible. Ensure the `USER` feature is used during the docker image build to downgrade the privileges.
+
 
 Leverage Docker build cache – Handle application dependencies before copying application artifacts:	
 
@@ -45,7 +43,7 @@ COPY ./ /opt
 RUN npm start
 ```
 
-Dependency install will always be busted 
+Dependency install is busted 
 ```yaml
 FROM node:latest
 COPY ./ /opt
@@ -63,7 +61,7 @@ Chain RUN command arguments to avoid too many layers being created (there’s a 
   subversion 
 ```
 
-Logging – Applications should log to stdout/stderr. Best practice is for logs to be logged to standard out/error and 
+Logging – Applications should log to stdout/stderr. A best practice is for logs to redirected to standard out/error and 
 the logging sidecar or host agent to aggregate the logs. 
 
 Config – Use environment variables to define runtime parameters, as opposed to hard config files. This separation of 
@@ -71,23 +69,22 @@ configuration and application code allows the container image to be immutable.
 
 Secrets – Application secrets should be instantiated at run-time.
 
-Container Security and Images
+### Container Security and Images
 
 Embedded Malware – Continuously monitor images for embedded malware, including malware signature sets and behavioral 
 detection heuristics method.
 
-Embedded Clear Text Secrets – Securely store secrets outside the image and deliver them only to authorized containers 
-at runtime. Enforce that secrets at rest and in transit are encrypted.
+Embedded Clear Text Secrets – Securely store secrets outside the image and deliver them only to authorized containers at runtime. Enforce that secrets at rest and in transit are encrypted.
 
 Use of Untrusted Images – Maintain a set of trusted images and registries by:
 
 - Continuously scanning for vulnerabilities and misconfigurations
-- Permitting  run time for authorized image within your cluster(s)
-- Whitelisting  approved container registries for your cluster use. 
+- Permitting  run time for the authorized image within your cluster(s)
+- Whitelisting approved container registries for your cluster use. 
 - Maintaining and validating image hash to ensure only authorized images are running. 
 - Use image signing with admission webhooks where appropriate
  
-Insecure Connections to Registries – Ensure all connection channels to registries are encrypted and all data pushed to 
+Insecure Connections to Registries – Ensure all connection channels to registries are encrypted, and all data pushed to 
 and pulled from a registry occurs between trusted endpoints and is encrypted in transit.
 
 Stale images in registries – Ensure only up-to-date, authorized images are used based on a clear naming convention.
@@ -96,32 +93,31 @@ Insufficient authentication and authorization restrictions – Control and manag
  with directory services such as IAM/SSO. Audit and log access to registries (write access and read of sensitive data). 
  Integrates automated scan into CI processes to ensure only authorized images can be used.
 
-Unbounded Administrative Access – Orchestrators should use a least privilege access model to enable controlled and 
+Unbounded Administrative Access – Orchestrators should use a least privileged access model to enable controlled and 
 limited user access to sensitive resources (host, containers, images).
 
-Dedicated service accounts for your application run-time - ensure kubernetes deployed application runtime relies on a 
+Dedicated service accounts for your application runtime - ensure kubernetes deployed application runtime relies on a 
 dedicated service-account for such purpose. Avoid using default service accounts to promote access segregation. Use 
-RBAC grouping as appropriate
+RBAC grouping as appropriate.
 
 Use dedicated namespace or namespace grouping for application runtime within kubernetes, to enforce access segregation. 
 This option will enable namespace based isolation for firewall security rule creation, and also simplifies namespace-based 
 forensic log collection.Unauthorized Access – Use strong authentication methods (e.g.: SSO) to secure access to cluster-wide 
 admin accounts.
 
-In addition, encrypt data at rest and control access to the data from containers only, regardless of the node they’re running on.
+Also, encrypt data at rest and control access to data from containers only, regardless of where the container runs.
  
 Poorly separated inter container network traffic – Configure orchestrators to segment network traffic into discrete 
-virtual networks by sensitivity level (e.g.: public-facing apps can share a virtual network vs. internal apps).
+virtual networks by sensitivity level (e.g., public-facing apps can share a virtual network vs. internal apps).
 
-Mixing of Workload Sensitivity Levels – Configure orchestrators to separate container and hosting zones by automatically 
-grouping and deploying workloads to hosts based on their sensitivity level, purpose and threat posture. Further, 
-for an additional layer of security, it’s recommended to segment network traffic more discreetly based on sensitivity 
-levels as well.
+Mixing of Workload Sensitivity Levels – Configure orchestrators to separate container and hosting zones by
+ automatically grouping and deploying workloads to hosts based on their sensitivity level, purpose and threat posture
+ . Further, for an additional layer of security, it’s recommended to segment network traffic more discreetly based on
+  the sensitivity levels as well.
  
-Orchestrator Node Trust – Configure orchestrators to safeguard secure-by-default ensuring nodes have a persistent 
-identity, gain accurate inventory of nodes and their network connections. Have the means in place to isolate/remove 
-compromised nodes would not compromise others and finally, use authenticated network connections between cluster members 
-and end-to-end encryption of intracluster traffic.
+
+Orchestrator Node Trust – Configure orchestrators to safeguard secure-by-default, ensuring nodes have a persistent
+ identity, gain accurate inventory of nodes, and network connections. Have the means in place to isolate/remove compromised nodes would not compromise others and finally, use authenticated network connections between cluster members and end-to-end encryption of intracluster traffic.
 
  Hunt for Vulnerabilities Within The Runtime Software – Monitor container runtime for vulnerabilities. Use tools to 
  detect CVEs vulnerabilities and ensure orchestrators only allow deployments to properly maintained runtime.
@@ -131,7 +127,7 @@ inter-container traffic. Use app-aware tools to gain visibility into inter-conta
 generate rules used to filter traffic based on specific app characteristics. In addition, these tools should provide:
 - Automated container networking surfaces (both inbound ports and process port bindings)
 - Detection of traffic flows both between containers and other network entities
-- Detection of network anomalies (e.g.: unexpected traffic flows, port scanning, outbound access to potentially risky 
+- Detection of network anomalies (e.g.,: unexpected traffic flows, port scanning, outbound access to potentially risky 
 destination)
   
 Insecure Container Runtime Configurations – Use tools/processes to continuously assess and automatically enforce 
@@ -139,57 +135,51 @@ configuration settings against CIS standards, for example. In addition, as an ad
 Access Control (MAC) technologies to secure the host OS layer and ensure only specific files, path, processes and 
 network sockets are accessible to containerized apps.
  
-App Vulnerabilities – Use container-native tools to automatically profile containerized apps using behavioral analysis 
-and build security profiles to be able to detect and prevent anomalous event at runtime, such as:
+App Vulnerabilities – Use container-native tools to automatically profile containerized apps using behavioral analysis and build security profiles to be able to detect and prevent anomalous event at runtime, such as:
 - Invalid or unexpected process execution
 - Invalid or unexpected system calls
-- Changes to protected configuration files and binaries Writes to unexpected locations and file types Creation of 
+- Changes to protected configuration files and binaries write to unexpected locations and file types Creation of 
 unexpected network listeners
 - Traffic sent to unexpected network destinations Malware storage or execution
 
-Further, containers should also be run with their root filesystems in read-only mode to make the containers more 
-resilient to compromise. In addition, write privileges can be defined and monitored separately.
+Further, containers should also be run with their root filesystems in read-only mode to make the containers more resilient to compromise. Also, write privileges can be defined and monitored separately.
 
 Rogue Containers – Create separate environments for development, test, production and other scenarios, each with 
 specific controls to provide RBAC for container deployment and management activities.
 
-In addition, container creation should be associated with individual user identities and logged to provide an activity 
+Also, container creation should be associated with individual user identities and logged to provide an activity 
 audit trail.
 
-Further, it is recommended to enforce baseline requirements for vulnerability management and compliance prior to deployment.
- 
-Shared Kernel – Do not mix containerized and non-containerized workloads on the same host instance. (e.g.: if a host is 
-running a web server container, it should not also run a web server as a regularly installed component directly within 
-the host OS). This will also make it easy to apply optimized countermeasures for container protection.
+Further, enforce baseline requirements for vulnerability management and compliance before deployment.
 
-Host OS Component Vulnerabilities – Implement management practices and tools to validate the versioning of components 
-provided for base OS management and functionality. Further, redeploy OS instances/apply updates (security and components-wise), 
+Shared Kernel – Do not mix containerized and non-containerized workloads on the same host instance. (e.g., if a host is 
+running a webserver container, it should not also run a web server as a regularly installed component directly within 
+the host OS). By not mixing the workloads, it makes it easy to apply optimized countermeasures for protecting the container protection.
+
+Host OS Component Vulnerabilities – Implement management practices and tools to validate the versioning of components provided for base OS management and functionality. Further, redeploy OS instances/apply updates (security and components-wise), 
 to keep the OS up-to-date. Use managed “Container Optimised System” images where possible.
 
-Monitor the multi-pod container YAML configuration. The Sidecar containers or initContainer may feature libraries, 
-configuration or components which could put the application container at risk, through the notion of shared linux namespace, 
-particularly the remapping of the shared volume binaries (if rw) between such containers may introduce application 
-run-time vulnerabilities
+Monitor the multi-pod container YAML configuration. The Sidecar containers or init container may feature libraries, 
+configuration or components which could put the application container at risk, through the notion of shared Linux namespace, 
+particularly the remapping of the shared volume binaries (if read-write) between such containers may introduce an application 
+runtime vulnerabilities
  
 Host File System Tampering – Ensure containers are running with a minimal set of file system permissions required. 
-Very rarely should containers mount local file systems on a host. Instead, any file changes that containers need to 
-persist to disk should be made within storage volumes specifically allocated for this purpose. In no case should 
-containers be able to mount sensitive directories on a host’s file system, especially those containing configuration 
-settings for the operating system. Lock down access such granular access as appropriate using the `SecurityContext`. 
-Do not enable/run containers in Privileged:True mode.
+Very rarely should containers mount local file systems on a host. Instead, any file changes that containers need to persist to disk should be made within storage volumes allocated explicitly for this purpose. In no case should containers be able to mount sensitive directories on a host’s file system, especially those containing configuration settings for the operating system. Lockdown access such granular access as appropriate using the `SecurityContext`. 
+Do not enable/run containers in Privileged: True mode.
 
 Improper User Access Rights – Ensure all authentication to the OS is audited, as well as monitor and login anomalies 
 and privileges escalation to be able identity, for example, anomalous access patterns to host and privileged commands 
 to manipulate containers.
 
  
-## Redhat’s 10 layers of Container Security [4]
+### Redhat’s 10 layers of Container Security [4]
 
-Container host multi-tenancy – The Host operating should be optimized to run containers such as Atomic, CoreOS.
+1. Container host multi-tenancy – The Host operating should be optimized to run containers such as Atomic, CoreOS.
 
-Container content – Packages and libraries should be scanned and verified from trusted sources.
+2. Container content – Packages and libraries should be scanned and verified from trusted sources.
 
-Container registries – An internal trusted registry should host internal application container images.
+3. Container registries – An internal trusted registry should host internal application container images.
 
 We recommend that you design your container image management and build process to take advantage of container layers to 
 implement separation of control, so that your: 
@@ -199,8 +189,8 @@ implement separation of control, so that your:
 docker image builds
 - Developers focus on application layers and just write code
 
-Building containers – Building containers should be done with a CI/CD pipeline to ensure the security of the images and 
-consistent build process for images. 
+4. Building containers – Building containers should be done with a CI/CD pipeline to ensure the security of the images
+ and a consistent build process for images.  
 
 A best practice for application security is to integrate automated security testing into your CI process. For example, 
 integrate:
@@ -211,10 +201,10 @@ IBM AppScan
 - Tools like these catalog the open source packages in your container, notify you of any known vulnerabilities and update 
 you when new vulnerabilities are discovered in previously scanned packages.
 
-Deploying containers – From a single container to an entire microservice architecture. The deployment process has 
+5. Deploying containers – From a single container to an entire microservice architecture. The deployment process has 
 several considerations.
 
-Container orchestration – The orchestrator should be able to answer the following questions: 
+6. Container orchestration – The orchestrator should be able to answer the following questions: 
 - Which containers should be deployed to which hosts?
 - Which host has more capacity?
 - Which containers need access to each other. How will they discover each other?
@@ -223,17 +213,20 @@ Container orchestration – The orchestrator should be able to answer the follow
 - How do you automatically scale application capacity to meet demand?
 - How to enable developer self-service while also meeting security requirements?
 
-Network isolation – A CNI should be chosen that supports network policies and allows for ingress/egress rules between 
+7. Network isolation – A CNI should be chosen that supports network policies and allows for ingress/egress rules
+ between 
 namespaces.
 
-Storage – Kubernetes provides plugins for persistent volumes. Their plugins have different capabilities and modes. 
+8. Storage – Kubernetes provides plugins for persistent volumes. Their plugins have different capabilities and modes. 
 For on-premise, volumes can be backed by technology such as NFS, Ceph and Gluster [6]
 
-Application programming interface (API) management – API Access, Authorization and Authentication should be a critical 
+9. Application programming interface (API) management – API Access, Authorization and Authentication should be a
+ critical 
 part of the Container and Cluster operations. Applications such as SAML 2.0 or OpenID Connect-based authentication and 
 web single sign-on should be used for AAA purposes. 
 
-Federated clusters – As of Kubernetes 1.3 Cluster Federation allows one authentication method for multiple clusters. 
+10. Federated clusters – As of Kubernetes 1.3 Cluster Federation allows one authentication method for multiple
+ clusters. 
 Running of multiple clusters allows applications to be highly available across data centers or available zones in data centers.
 
 ## Cluster Setup
@@ -258,8 +251,8 @@ Etcd:
 
 - Etcd – Backend data store for the API server
 
-Cluster Size – Master nodes should always be an odd number as well as the etcd cluster, to be able to withstand loss of 
-a node.
+Cluster Size – Master nodes should always be an odd number as well as the etcd cluster, to be able to withstand the loss
+ of a node.
 
 (N - 1) / 2 where n is the number of nodes in the cluster, so a 3 node cluster can withstand a loss of one node and still function. 
 
@@ -268,45 +261,49 @@ The API server is protected by TLS certificates as well from a dedicated CA for 
 
 - CA CERT – Put in on node where API Server runs, for example in /srv/kubernetes/ca.crt
 - CA Private Key
-- Master cert – Signed by CA_CERT, put in on node where Api Server runs, for example in /srv/kubernetes/server.crt
-- Master key – Put in on node where Api Server runs, for example in /srv/kubernetes/server.key
+- Master cert – Signed by CA_CERT, put in on node where API Server runs, for example in /srv/kubernetes/server.crt
+- Master key – Put in on node where API Server runs, for example in /srv/kubernetes/server.key
 - Kubelet cert and key
-- kube-controller-manager certificate and private key
-- kube-proxy certificate and private key
-- kube-scheduler certificate and private key
+- Kube-controller-manager certificate and private key
+- Kube-proxy certificate and private key
+- Kube-scheduler certificate and private key
 
-Namespaces – Use of Namespaces will logically organize the cluster. Namespaces can also have different RBAC privileges. 
-Also it will allow for network isolation between pods. Namespaces allow for different quotas for cluster resources. 
+Namespaces – Use of Namespaces logically organize the cluster. Namespaces can also have different RBAC privileges. 
+Also, it allows for network isolation between pods. Namespaces allow for different quotas for cluster resources. 
 
-Etcd – If possible Etcd should be external to the cluster. Some installations run Etcd on the same nodes as the masters. 
-
+ETCD – If possible, ETCD should be external to the cluster. Some installations run ETCD on the same nodes as the masters.
 Worker Node preparation:  
 
-Docker Install – Docker creates its own bridge during install but Kubernetes does not use this specific one so run: 
+Docker Install – Docker creates its own bridge during install, but Kubernetes does not use this specific one so run: 
+```bash
 iptables -t nat -F
 ip link set docker0 down
 ip link delete docker0
-Kubelet – When running HTTPS on the API Server make sure to update the Kubelet config on each node. 
+```
+
+Kubelet – When running HTTPS on the API Server, make sure to update the Kubelet config on each node.  
 
 Kube Proxy – All nodes must run the Kube proxy. 
 
 --master=https://$MASTER_IP
 --kubeconfig=/var/lib/kube-proxy/kubeconfig
-Other Options to consider 
-Enable auto-upgrades for your OS package manager, if desired
-Configure log rotation for all node components
-Setup liveness-monitoring using OS specific tools such as supervisord 
-Setup volume plugin support – Install any client binaries for optional volume types, such as: 
-glusterfs-client
-NFS
-Ceph 
 
-6. Validate the cluster is set up properly – The Kubernetes github repo provides scripts to validate the setup of the 
-cluster. Provided here [4]. 
-	
+Other Options to consider 
+
+Enable auto-upgrades for your OS package manager, if desired
+
+Configure log rotation for all node components
+
+Setup liveness-monitoring using OS-specific tools such as supervisord 
+
+Setup volume plugin support – Install any client binaries for optional volume types, such as glusterfs-client, NFS, Ceph 
+
+Validate the cluster has been set up correctly – The Kubernetes GitHub repo provides scripts to validate the setup of the cluster. Provided here [4]. 
+
 ## Securing the Cluster
 
-A Kubernetes Cluster has several components and all of them need to be secured to ensure cluster secure communication on a network. 
+A Kubernetes Cluster has several components, and all of them need to be secured to ensure cluster secure
+ communication on a network. 
 					
 Master Access – All access to the master is over transport layer security (TLS)
 
@@ -324,11 +321,12 @@ Component Communication Breakdown
 
 CNI: Network Plugin in Kubelet that allows communication to the network to get IPs for Pods and Services.
 
-gRPC: API to communicate API Server to ETCD, Controller Manager and Scheduler.
+gRPC: API to communicate API Server to ETCD, Controller Manager, and Scheduler.
 
-Kubelet – All K8s nodes have a kubelet that ensures that any pod assigned to it is running and configured in the desired state.
+Kubelet – All K8s nodes have a kubelet that ensures that any pod assigned to it is running and is configured in the desired state.
 
-CRI (Container Runtime Interface) gRPC API compiled in kubelet which allows the kubelet to talk to container runtimes by using gRPC API.
+CRI (Container Runtime Interface) gRPC API compiled in kubelet, which allows the kubelet to talk to container
+ runtimes by using gRPC API.
 
 The Container Runtime provider has to adapt it to CRI API to allow kubelet to talk to them by using OCI Standard (runc). 
 Initially, Kubernetes was built on top of Docker as the container runtime. Soon after, CoreOS announced the rkt container 
@@ -336,40 +334,36 @@ runtime and wanted Kubernetes to support it as well. Kubernetes ended up support
 wasn't very scalable in terms of adding new features or support for new container runtimes.
 
 CRI consists of a protocol buffers and gRPC API, and libraries.
-
 	
 API Server – The API server should be protected with TLS certificates. 
 
-Cluster – All communication paths from the cluster to the master terminate at the Api Server. 
+Cluster – All communication paths from the cluster to the master terminate at the API Server. 
 
-Kubelet – The connections from the API server to the kubelet are used for:
+Kubelet – The connections from the API server to the kubelet 
+
 - Fetching logs for pods
 - Attaching (through kubectl) to running pods
 - Providing the kubelet’s port-forwarding functionality
 
-    These connections terminate at the kubelet’s HTTPS endpoint. By default, the Api Server does not verify the 
-ubelet’s serving certificate, which makes the connection subject to man-in-the-middle attacks, and unsafe to run over 
-untrusted and/or public networks. [1]
+These connections terminate at the kubelet’s HTTPS endpoint. By default, the API Server does not verify the kubelet’s serving certificate, which makes the connection subject to man-in-the-middle attacks, and unsafe to run over untrusted or public networks. [1]
 
-- Api Server to nodes, pods and services
+- API Server to nodes, pods, and services
 
-    The connections from the Api Server to a node, pod or service default to plain HTTP connections and are therefore 
-    neither authenticated nor encrypted. They can be run over a secure HTTPS connection by prefixing https: to the node, 
-    pod or service name in the API URL, but they will not validate the certificate provided by the HTTPS endpoint nor 
-    provide client credentials so while the connection will be encrypted, it will not provide any guarantees of integrity. 
-    These connections are not currently safe to run over untrusted and/or public networks.[1]
+    The connections from the API Server to a node, pod, or service default to unencrypted HTTP connections and are therefore neither authenticated nor encrypted. They can be run over a secure HTTPS connection by prefixing https: to the node, 
+    pod or service name in the API URL, but they do not validate the certificate provided by the HTTPS endpoint nor provide client credentials, so while the connection is encrypted, it does not provide any guarantees of integrity. 
+    These connections are not currently safe to run over untrusted or public networks.[1]
 
-The Center for Internet Security (CIS) publishes a Benchmark for Kubernetes giving best practices for configuring a 
+The Center for Internet Security (CIS) publishes a Benchmark for Kubernetes, giving best practices for configuring a 
 deployment to use secure settings. If you are running Docker as the container runtime, CIS also publishes their 
-Benchmark for Docker [13]. These benchmarks should be part of the normal Cluster operations and CI/CD practices to 
-ensure your clusters are always secure. 
+Benchmark for Docker [13]. These benchmarks should be part of the normal Cluster operations and CI/CD practices to
+ ensure your clusters are always secure. 
 				
 ## Cluster Operations 
 
 Certificate rotation – Enable automatic certificate rotation on the API server. Default Certificates generally expire 
 after a year but can be configured at the CA level.  
 
-Start the kubelet with this flag 
+Start the kubelet with this flag. 
 
 The kubelet process accepts an argument `--rotate-certificates` that controls the kubelet automatically requesting a 
 new certificate as the expiration of the certificate currently in use approaches.
@@ -377,11 +371,14 @@ new certificate as the expiration of the certificate currently in use approaches
 Since certificate rotation is a beta feature, the feature flag must also be enabled with 
 `--feature-gates=RotateKubeletClientCertificate=true`
 
-The kube-controller-manager process accepts an argument `--experimental-cluster-signing-duration` that controls how long 
-certificates will be issued for as well. The default is one year. 
+The kube-controller-manager process accepts an argument `--experimental-cluster-signing-duration` that controls how long certificates are issued. The default is one year. 
 
-Node Draining – Marking a node as unschedulable prevents new pods from being scheduled to that node, but does not affect 
-any existing pods on the node, Pods that are running under Deployments, Services will be rescheduled on other nodes. This is useful as a preparatory step before a node maintenance and reboot. Run this command:
+Node Draining – Marking a node as unschedulable prevents new pods from being scheduled to that node but does not affect 
+any existing pods on the node, Pods that are running under Deployments, Services are then rescheduled on other nodes. This is useful as a preparatory step before node maintenance and reboot. Run this command:
+
+```bash
+kubectl cordon $NODENAME
+
 
 ```bash
 kubectl cordon $NODENAME
@@ -424,6 +421,8 @@ Implement Blue-Green Deployment strategy or also called as Node Pool.
 
 Image 3. Monitor levels in Kubernetes
 
+#### Monitoring
+
 Host Level Metrics (Cluster Utilization) – The Kubernetes API exposes nodes metrics which can be used in conjunction 
 by leveraging a full fledged monitoring solution such as Prometheus, Heapster or InfluxDB and Grafana to monitor 
 node-level CPU utilization, Memory Utilization vs Reservation, Disk Utilization, Network in/out and ultimately node status 
@@ -437,7 +436,7 @@ hat internal function calls are causing a potential bottleneck for an applicatio
 custom metrics / KPIs outside of the usual host-level metrics that operation teams are accustomed to alert on.
 
 Log Aggregation (Avoid writing to files – do stdout/err) – Leverage a log-forwarder agent as a sidecar to push logs 
-into a central store (e.g.: splunk agent, sumologic, loggly or FluentD) – Having access to application logs is 
+into a central store (e.g.,: splunk agent, sumologic, loggly or FluentD) – Having access to application logs is 
 imperative to application telemetry in conjunction with metrics. Application logs will allow operators and support 
 personnel to identify whether or not programs are catching errors accordingly or spitting out stack-traces for 
 unhandled exceptions.
@@ -449,8 +448,10 @@ problem detector in your cluster to monitor the node health.
 Have Visibility of Readiness and Liveness Checks – Kubernetes Pods use Readiness and liveness Checks to ensure the health of the pods.
 livenessProbe: Indicates whether the Container is running. If the liveness probe fails, the kubelet kills the Container, and the Container is subjected to its restart policy. If a Container does not provide a liveness probe, the default state is Success [17].
 readinessProbe: Indicates whether the Container is ready to service requests. If the readiness probe fails, the endpoints controller removes the Pod’s IP address from the endpoints of all Services that match the Pod. The default state of readiness before the initial delay is Failure. If a Container does not provide a readiness probe, the default state is Success. [17].
-Alerting
-Alert on application metrics (e.g.: API Latency) – Working in a Kubernetes Environment would not change how the APM is being used in the application. Applications can still provide metrics via the SDK or other integrations included in the APM. 
+
+#### Alerting
+
+Alert on application metrics (e.g.,: API Latency) – Working in a Kubernetes Environment would not change how the APM is being used in the application. Applications can still provide metrics via the SDK or other integrations included in the APM. 
 
 Alert on system calls (Count of CrashLoopBackOff) – Pods have statuses that indicate issues with it. During deployments and everyday operations, these should be monitoring and alerting on. 
 
