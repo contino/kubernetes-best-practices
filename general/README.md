@@ -4,16 +4,25 @@
 
 Table of Contents
 
-Container Best Practices
-Container Security and Images
-Cluster Setup
-Securing the Cluster
-Cluster Operations
-Application and Cluster Monitoring and Alerting
-Cluster Authentication
-Cluster Authorization
-Troubleshooting Cluster
-Troubleshooting Application
+[Container Best Practices](#container-best-practices)
+
+[Container Security and Images](#redhats-10-layers-of-container-security-4)
+
+[Cluster Setup](#cluster-setup)
+
+[Securing the Cluster](#securing-the-cluster)
+
+[Cluster Operations](#cluster-operations)
+
+[Application and Cluster Monitoring and Alerting](#cluster-and-container-monitoring-and-alerting)
+
+[Cluster Authentication](#cluster-authentication)
+
+[Cluster Authorization](#cluster-authorization)
+
+[Troubleshooting Cluster](#cluster-troubleshooting)
+
+[Troubleshooting Application]()
 
 ## Container Best Practices
 
@@ -231,7 +240,7 @@ Running of multiple clusters allows applications to be highly available across d
 
 High level overview of the Cluster setup. Complete and detailed directions are provided here [8].
 
-![](img/image1.png)
+![](img/high-level.png)
 
 Image 1. Kubernetes Components High-Level Overview 
 Services/Applications running on each node 
@@ -306,7 +315,7 @@ API Access – Access to the API server is X.509 certificate or token-based
 ETCD – Etcd is not exposed directly to the cluster
 
 
-
+![](img/component.png)
 
 Image 2. Kubernetes Component Communication
 
@@ -411,6 +420,8 @@ Implement Blue-Green Deployment strategy or also called as Node Pool.
 
 ## Cluster and Container Monitoring and Alerting
 
+![](img/monitor.png)
+
 Image 3. Monitor levels in Kubernetes
 
 Host Level Metrics (Cluster Utilization) – The Kubernetes API exposes nodes metrics which can be used in conjunction 
@@ -464,13 +475,16 @@ Integrate your existing LDAP.
 
 Leverage your existing Organization LDAP to manage your users and roles. This can be achieved using OpenID as described in Image 4. 
 
-![](img/image4.png)
+![](img/kube-auth.png)
 
 Image 4.  Kubectl Authentication with OpenID Connect.
 
 Requirements for an IDP to use with Kubernetes 
+
 Support OpenID connect discovery; not all do
+
 Run in TLS with non-obsolete ciphers
+
 Have a CA signed certificate (even if the CA is not a commercial CA or is self signed)
 
 
@@ -479,6 +493,7 @@ Have a CA signed certificate (even if the CA is not a commercial CA or is self s
 Grant role-based access to cluster resources. 
 
 ClusterRole – Set of rules that determine the permission scoped at the cluster level.
+
 Clusterrolebinding – Grants the privileges defined in a clusterRole
 
 ```yaml
@@ -508,7 +523,9 @@ roleRef:
 ```
 
 Grant role-based access to users in the namespace 
+
 Role – Set of rules that determine the permission scoped at the namespace level 
+
 Rolebinding – Grants the privileges defined in a Role
 
 ```yaml
@@ -547,7 +564,7 @@ A service account provides an identity for processes that run in a Pod. Every   
 
 Set a reasonable user session timeout.
 
-Cluster Troubleshooting 
+### Cluster Troubleshooting 
 
 Master Node Checks – All services for the Kubernetes components run as services on the Master nodes. To check the status of all components run.
 
@@ -584,7 +601,7 @@ gke-cka-default-pool-9f1b2d0f-tlft   Ready     9m
 kubectl describe nodes
 ```
 
-Log locations
+*Log locations*
 
 Master
 
@@ -597,18 +614,32 @@ Worker Nodes
 * /var/log/kubelet.log – Kubelet, responsible for running containers on the node
 * /var/log/kube-proxy.log – Kube Proxy, responsible for service load balancing
 
-Application Troubleshooting 
+### Application Troubleshooting 
+
 kubectl Commands
+
 Kubectl get – List resources
+
 Kubectl describe – Show detailed information about a resource
+
 Kubectl logs – Print the logs from a container in a pod
+
 kubectl exec – Execute a command on a container in a pod
+
 BusyBox – Another common practice is use busybox to troubleshoot issues inside the cluster. The command below will start a busybox container in the cluster and drop you into a shell to run diagnostics. 
+
+```bash 
 kubectl run -i --tty busybox --image=busybox -- sh
+```
+
 Kubernetes Cheat sheet – A list of common Kubernetes commands is available [15]
+
 Common pods failures
-Pending status – The Kubernetes scheduler is trying to schedule the pod on a node. It is generally an issue with capacity. kubectl describe pod $PODNAME will output more information, or kubectl describes nodes. 
-CrashLoopFeedback – This is a common issue where a pod was scheduled but the backend application crashed. The best way to troubleshoot this issue is to perform a kubectl logs $PODNAME; If it’s evident that the crash isn’t application-specific, then performing a kubectl describe pod $PODNAME is the next best step.
+
+Pending status – The Kubernetes scheduler is trying to schedule the pod on a node. It is generally an issue with capacity. `kubectl describe pod $PODNAME` will output more information, or `kubectl describes nodes`. 
+
+CrashLoopFeedback – This is a common issue where a pod was scheduled but the backend application crashed. The best way to troubleshoot this issue is to perform a kubectl logs $PODNAME; If it’s evident that the crash isn’t application-specific, then performing a 
+`kubectl describe pod $PODNAME` is the next best step.
 
 
 Sources
@@ -617,7 +648,7 @@ Sources
 2. Kubernetes TLS bootstrapping, https://kubernetes.io/docs/reference/command-line-tools-reference/kubelet-tls-bootstrapping/
 3. Google hardening your Cluster, https://cloud.google.com/kubernetes-engine/docs/how-to/hardening-your-cluster
 4. Redhat's 10 layers of Container Security, https://www.redhat.com/cms/managed-files/cl-container-security-openshift-cloud-devops-tech-detail-f7530kc-201705-en.pdf
-5. Kubernetes authorization, https://v1-11.docs.kubernetes.io/docs/reference/access-authn-authz/authentication
+5. Kubernetes authorization, https://kubernetes.io/docs/reference/access-authn-authz/authorization/
 6. Kubernetes Storage, https://kubernetes.io/docs/concepts/storage/persistent-volumes/ 
 7. Kubernetes Namespaces, https://github.com/kubernetes/community/blob/master/contributors/design-proposals/architecture/namespaces.md#phases
 8. Kubernetes Setup from Scratch, https://kubernetes.io/docs/setup/scratch
